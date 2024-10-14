@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+    environment {
+        SSH_CREDENTIALS_ID = 'id_rsa'
+        TARGET_SERVER = 'ubuntu@192.168.2.108' // Define the target server
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                // Clone your repository from Git
+                git 'https://github.com/veeru1819/maven-web-application.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                // Build your application (Maven example)
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                // Run tests (if any)
+                sh 'mvn test'
+            }
+        }
+
+        stage('Copy file using SCP') {
+            steps {
+                sshagent(credentials: [SSH_CREDENTIALS_ID]) {
+                    sh '''
+                        scp target/*.war $TARGET_SERVER:/opt/apache-tomcat-9.0.96/webapps/
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Application deployed successfully!'
+        }
+        failure {
+            echo 'Deployment failed!'
+        }
+    }
+}
